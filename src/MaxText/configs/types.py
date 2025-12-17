@@ -253,7 +253,6 @@ class Checkpointing(BaseModel):
   """Core configuration for checkpointing and run restoration."""
 
   load_parameters_path: PathStr = Field("", description="Loads only model parameters from a specific checkpoint path.")
-  lora_input_adapters_path: PathStr = Field("", description="Input GCS path for LoRA adapters.")
   load_full_state_path: PathStr = Field("", description="Loads the complete training state from a checkpoint path.")
   enable_checkpointing: bool = Field(True, description="If True, enables saving checkpoints during training.")
   async_checkpointing: bool = Field(True, description="If True, uses an asynchronous checkpointer for performance.")
@@ -279,6 +278,14 @@ class Checkpointing(BaseModel):
   save_checkpoint_on_completion: bool = Field(
       True, description="If True, saves a final checkpoint upon training completion."
   )
+
+
+class LoRA(BaseModel):
+  """Configuration for LoRA (Low-Rank Adaptation) fine-tuning."""
+
+  lora_input_adapters_path: PathStr = Field("", description="Input GCS path for LoRA adapters.")
+  lora_rank: NonNegativeInt = Field(0, description="LoRA adapter rank. 0 means no LoRA.")
+  lora_alpha: NonNegativeFloat = Field(1.0, description="LoRA scaling factor. Output is scaled by alpha/rank.")
 
 
 class OrbaxStorage(BaseModel):
@@ -1580,6 +1587,7 @@ class MaxTextConfig(
     # Run and Checkpointing
     RunInfo,
     Checkpointing,
+    LoRA,
     OrbaxStorage,
     EmergencyCheckpointing,
     # Data Types and Quantization
@@ -1974,8 +1982,8 @@ class MaxTextConfig(
     # H. RUN ALL CROSS-FIELD VALIDATIONS
     if self.load_parameters_path and self.load_full_state_path:
       raise ValueError("At most one of `load_parameters_path` or `load_full_state_path` should be set.")
-    if (self.load_parameters_path or self.load_full_state_path) and not self.enable_checkpointing:
-      raise ValueError("You must set enable_checkpointing=True to load a checkpoint.")
+    # if (self.load_parameters_path or self.load_full_state_path) and not self.enable_checkpointing:
+    #   raise ValueError("You must set enable_checkpointing=True to load a checkpoint.")
     if self.enable_multi_tier_checkpointing:
       if not self.local_checkpoint_directory:
         raise ValueError("`local_checkpoint_directory` must be set for multi-tier checkpointing.")
